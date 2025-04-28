@@ -1,5 +1,6 @@
 [
   "obsidian-excalidraw-plugin",
   "sample-plugin",
-  "hello-world"
+  "hello-world",
+  "hot-reload"
 ]

@@ -22,22 +22,6 @@
             }
           }
         ]
-      },
-      {
-        "id": "f311ece19f5619be",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "e2bdaa319b40875a",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
-            }
-          }
-        ]
       }
     ],
     "direction": "vertical"
@@ -166,17 +150,27 @@
               "icon": "lucide-list",
               "title": "Outline of Welcome"
             }
+          },
+          {
+            "id": "5154fd75ed9ebaf0",
+            "type": "leaf",
+            "state": {
+              "type": "example-view",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "Example view"
+            }
           }
-        ]
+        ],
+        "currentTab": 4
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
-      "hello-world:Greet": false,
+      "hello-world:Sample Plugin": false,
       "obsidian-excalidraw-plugin:New drawing": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
@@ -184,7 +178,9 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "hello-world:Sample Plugin": false
+      "hello-world:Greet": false,
+      "hello-world:Activate view": false,
+      "hello-world:List Contents of Vault": false
     }
   },
   "active": "ecde01fd36289c66",
