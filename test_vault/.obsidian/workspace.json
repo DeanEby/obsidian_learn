@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "ee64731bc53a42e0",
+        "id": "2eb38af488309da6",
         "type": "tabs",
         "children": [
           {
-            "id": "2d2167f9aacc73dd",
+            "id": "2aa831c4b1a1ece5",
             "type": "leaf",
             "state": {
               "type": "empty",
@@ -162,7 +162,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 431.5
+    "width": 639.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -176,7 +176,7 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "2d2167f9aacc73dd",
+  "active": "b2b59a992c43e779",
   "lastOpenFiles": [
     "Untitled.md",
     "intro_to_javascript.md",

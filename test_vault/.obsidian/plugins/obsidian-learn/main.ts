@@ -141,9 +141,40 @@ export default class LearnPlugin extends Plugin {
 
 		try {
 			// Build a prompt for the AI to extract key points
-			const prompt = `Extract 3-5 key points from this note in bullet point format:
-			
-${content}`;
+			const prompt = `You are an expert educator creating study materials from student notes. Generate 3-5 questions based on these notes using ONLY the following question formats:
+
+							1. Flashcard (question-answer pairs)
+							2. Cloze (fill-in-the-blank)
+							3. Multiple choice (with 4 options)
+
+							Return ONLY a valid JSON array of question objects using these exact formats:
+
+							[
+							{
+								"type": "flashcard",
+								"id": 1,
+								"question": "What is the capital of France?",
+								"answer": "Paris"
+							},
+							{
+								"type": "cloze",
+								"id": 2,
+								"text": "The capital of France is ___.",
+								"answer": "Paris"
+							},
+							{
+								"type": "multiple_choice",
+								"id": 3,
+								"question": "What is the largest planet in our solar system?",
+								"options": ["Earth", "Saturn", "Jupiter", "Mars"],
+								"correct_index": 2
+							}
+							]
+
+							NOTES TO PROCESS:
+							<notes>${content}</notes>
+
+							Important: Return ONLY the JSON array with no additional text, explanations, or markdown.`;
 			
 			// Call the LM Studio API with the note content
 			const result = await callLMStudioAPI(prompt);
