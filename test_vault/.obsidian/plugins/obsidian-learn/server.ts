@@ -10,11 +10,11 @@ const PORT = 3001;
 app.use(cors());
 
 // Proxy requests to LM Studio
-app.use('/v1', createProxyMiddleware({
+app.use('', createProxyMiddleware({
   target: 'http://127.0.0.1:1234',
   changeOrigin: true,
   // Ensure the path is forwarded correctly
-  pathRewrite: { '^/v1': '/v1' }
+  //pathRewrite: { '^/v1': '/v1' }
 }));
 
 // For debugging
