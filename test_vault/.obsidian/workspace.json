@@ -142,17 +142,17 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Welcome.md",
+                "file": "intro_to_javascript.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Welcome"
+              "title": "Outline of intro_to_javascript"
             }
           },
           {
-            "id": "5154fd75ed9ebaf0",
+            "id": "b2b59a992c43e779",
             "type": "leaf",
             "state": {
               "type": "example-view",
@@ -170,20 +170,20 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "learn:Summarize Notes": false,
       "obsidian-excalidraw-plugin:New drawing": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
-      "command-palette:Open command palette": false,
-      "learn:Summarize Notes": false
+      "command-palette:Open command palette": false
     }
   },
   "active": "ecde01fd36289c66",
   "lastOpenFiles": [
-    "Research Methods.md",
     "intro_to_javascript.md",
+    "Research Methods.md",
     "python_flask.md",
     "Welcome.md"
   ]

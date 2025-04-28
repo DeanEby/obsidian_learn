@@ -1,6 +1,72 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, TFile } from 'obsidian';
 import { ExampleView, VIEW_TYPE_EXAMPLE } from './view';
 
+import axios from 'axios';
+
+interface Message {
+	role: 'system' | 'user' | 'assistant';
+	content: string;
+}
+
+interface CompletionRequest {
+	model: string;
+	messages: Message[];
+	temperature?: number;
+	max_tokens?: number;
+  }
+  
+  interface CompletionResponse {
+	id: string;
+	object: string;
+	created: number;
+	model: string;
+	choices: {
+	  index: number;
+	  message: Message;
+	  finish_reason: string;
+	}[];
+	usage: {
+	  prompt_tokens: number;
+	  completion_tokens: number;
+	  total_tokens: number;
+	};
+  }
+
+async function callLMStudioAPI(prompt: string): Promise<string> {
+	console.log("Calling LM Studio API with prompt:");
+  try {
+    const response = await axios.post<CompletionResponse>(
+      'http://localhost:3001/v1/chat/completions',
+      {
+        model: 'local model',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 1000
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log("API response status:", response.status);
+    return response.data.choices[0].message.content;
+  } catch (error: any) {
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNREFUSED') {
+        console.error('Connection refused - Is LM Studio API server running on port 3001?');
+      } else if (error.response) {
+        console.error('LM Studio API error:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('No response received from LM Studio API. Is the server running?');
+      }
+    }
+    console.error('Error calling LM Studio API:', error);
+    throw error;
+  }
+}
+
 interface LearnPluginSettings {
 	summarizeOnOpen: boolean;
 	keyPointsPrefix: string;
@@ -12,7 +78,7 @@ const DEFAULT_SETTINGS: LearnPluginSettings = {
 }
 
 export default class LearnPlugin extends Plugin {
-	settings: LearnPluginSettings;
+	settings: LearnPluginSettings = DEFAULT_SETTINGS;
 	summaries: Map<string, string> = new Map();
 
 	async onload() {
@@ -63,6 +129,7 @@ export default class LearnPlugin extends Plugin {
 		new Notice(`Summarized ${this.summaries.size} notes`);
 	}
 	
+
 	async extractKeyPoints(file: TFile): Promise<string> {
 		// Read file content
 		const content = await this.app.vault.read(file);
@@ -71,72 +138,21 @@ export default class LearnPlugin extends Plugin {
 		if (!content.trim()) {
 			return "";
 		}
-		
-		// Extract potential key points - basic implementation
-		// Look for bullet points, headings, and emphasized text
-		const lines = content.split('\n');
-		const keyPoints: string[] = [];
-		
-		// Extract bullet points (most likely to be key points)
-		const bulletPoints = lines.filter(line => 
-			line.trim().startsWith(this.settings.keyPointsPrefix) || 
-			line.trim().startsWith('* ') || 
-			line.trim().startsWith('+ ')
-		);
-		
-		if (bulletPoints.length > 0) {
-			keyPoints.push(...bulletPoints.slice(0, 5)); // Limit to top 5 bullet points
-		}
-		
-		// Extract headings if no bullet points found
-		if (keyPoints.length === 0) {
-			const headings = lines.filter(line => 
-				line.trim().startsWith('#') && 
-				!line.trim().startsWith('##')
-			);
+
+		try {
+			// Build a prompt for the AI to extract key points
+			const prompt = `Extract 3-5 key points from this note in bullet point format:
 			
-			if (headings.length > 0) {
-				keyPoints.push(...headings.slice(0, 3));
-			}
-		}
-		
-		// Extract emphasized text if still no key points
-		if (keyPoints.length === 0) {
-			// Look for bold or italic text
-			const emphasisRegex = /\*\*(.+?)\*\*|\*(.+?)\*|__(.+?)__|_(.+?)_/g;
-			let match;
-			const emphasisPoints: string[] = [];
+${content}`;
 			
-			while ((match = emphasisRegex.exec(content)) !== null) {
-				const emphText = match[1] || match[2] || match[3] || match[4];
-				if (emphText && emphText.length > 10) { // Only meaningful emphasis
-					emphasisPoints.push(`- ${emphText}`);
-				}
-			}
-			
-			if (emphasisPoints.length > 0) {
-				keyPoints.push(...emphasisPoints.slice(0, 3));
-			}
+			// Call the LM Studio API with the note content
+			const result = await callLMStudioAPI(prompt);
+			console.log(`Key points extracted for ${file.basename}:`, result);
+			return result;
+		} catch (error) {
+			console.error(`Failed to extract key points for ${file.basename}:`, error);
+			return "Failed to extract key points - API error";
 		}
-		
-		// If still no key points, take first paragraph
-		if (keyPoints.length === 0) {
-			let paragraph = "";
-			for (const line of lines) {
-				if (line.trim().length > 0) {
-					paragraph += line + " ";
-					if (paragraph.length > 150) break;
-				} else if (paragraph.length > 0) {
-					break;
-				}
-			}
-			
-			if (paragraph) {
-				keyPoints.push(`- ${paragraph.trim()}`);
-			}
-		}
-		
-		return keyPoints.join('\n');
 	}
 
 	async activateView() {
