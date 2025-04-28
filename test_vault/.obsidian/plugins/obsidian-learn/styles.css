@@ -1,0 +1,45 @@
+/*
+
+This CSS file will be included with your plugin, and
+available in the app when your plugin is enabled.
+
+If your plugin does not need CSS, delete this file.
+
+*/
+
+/* Plugin styles */
+.note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 10px 0;
+}
+
+.note-item {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 5px;
+  padding: 10px;
+  background-color: var(--background-secondary);
+}
+
+.note-header {
+  margin-bottom: 5px;
+  font-weight: bold;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 5px;
+}
+
+.note-link {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+
+.note-link:hover {
+  text-decoration: underline;
+}
+
+.note-summary {
+  color: var(--text-normal);
+  font-size: 0.9em;
+  white-space: pre-line;
+}
