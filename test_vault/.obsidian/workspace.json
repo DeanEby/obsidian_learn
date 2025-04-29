@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "intro_to_javascript.md",
+                "file": "Biology Fundamentals.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "intro_to_javascript"
+              "title": "Biology Fundamentals"
             }
           }
         ]
@@ -176,7 +176,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 619.5
+    "width": 332.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -193,9 +193,9 @@
   },
   "active": "2aa831c4b1a1ece5",
   "lastOpenFiles": [
-    "Biology Fundamentals.md",
     "intro_to_javascript.md",
     "Programming Concepts.md",
+    "Biology Fundamentals.md",
     "Machine Learning Basics.md",
     "Ancient History.md",
     "Research Methods.md",

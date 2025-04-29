@@ -251,21 +251,38 @@ export class QuizView extends ItemView {
         const isSelected = this.userAnswers.get(question.id) === index;
         const isCorrect = index === question.correct_index;
         
-        let cls = "";
-        if (isSelected && isCorrect) {
-          cls = "selected correct";
-        } else if (isSelected && !isCorrect) {
-          cls = "selected incorrect";
-        } else if (!isSelected && isCorrect) {
-          cls = "correct";
+        try {
+          let classesToAdd: string[] = [];
+          
+          if (isSelected && isCorrect) {
+            classesToAdd.push("selected", "correct");
+          } else if (isSelected && !isCorrect) {
+            classesToAdd.push("selected", "incorrect");
+          } else if (!isSelected && isCorrect) {
+            classesToAdd.push("correct");
+          }
+          
+          // Add each class individually to avoid empty string issues
+          classesToAdd.forEach(cls => {
+            if (cls && cls.trim()) {
+              optionContainer.addClass(cls);
+            }
+          });
+        } catch (error) {
+          console.error("Error adding classes to option container:", error);
         }
         
-        optionContainer.addClass(cls);
         optionContainer.createSpan({ text: option });
       } else {
         const isSelected = this.userAnswers.get(question.id) === index;
+        
+        // Only add class if selected is true
         if (isSelected) {
-          optionContainer.addClass("selected");
+          try {
+            optionContainer.addClass("selected");
+          } catch (error) {
+            console.error("Error adding 'selected' class:", error);
+          }
         }
         
         optionContainer.createSpan({ text: option });
@@ -296,11 +313,9 @@ export class QuizView extends ItemView {
     const userAnswer = this.userAnswers.get(question.id);
     const isCorrect = userAnswer === question.correct_index;
 
-    if (isCorrect) {
-      this.score++;
-    }
     
     this.showingAnswer = true;
+    console.log("before refresh");
     this.refresh();
   }
 

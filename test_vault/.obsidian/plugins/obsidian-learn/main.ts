@@ -227,7 +227,7 @@ export default class LearnPlugin extends Plugin {
 							{
 								"type": "cloze",
 								"id": 2,
-								"text": "The capital of France is <CLOZE>.",
+								"text": "The capital of France is <CLOZE>.", 
 								"answer": "Paris"
 							},
 							{
@@ -250,12 +250,12 @@ export default class LearnPlugin extends Plugin {
 			
 			// Call the LM Studio API with the note content
 			const result = await callLMStudioAPI(prompt);
-			console.log(`Raw quiz data for ${file.basename}:`, result);
+			console.log(`Raw quiz data for ${file.basename}:`);
 			
 			// Clean and parse the JSON result
 			try {
 				const cleanedResult = cleanJsonResponse(result);
-				console.log(`Cleaned quiz data for ${file.basename}:`, cleanedResult);
+				console.log(`Cleaned quiz data for ${file.basename}`);
 				
 				const quizData = JSON.parse(cleanedResult) as Question[];
 				await this.activateQuizView(quizData);
