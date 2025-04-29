@@ -3,7 +3,7 @@
 	"name": "Learn",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Extract and summarize key points from your notes for quick review and learning.",
+	"description": "Extract key points from your notes and generate interactive quizzes for effective learning.",
 	"author": "Obsidian",
 	"authorUrl": "https://obsidian.md",
 	"fundingUrl": "https://obsidian.md/pricing",

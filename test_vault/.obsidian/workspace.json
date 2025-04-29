@@ -11,10 +11,14 @@
             "id": "2aa831c4b1a1ece5",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "intro_to_javascript.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "intro_to_javascript"
             }
           }
         ]
@@ -156,16 +160,27 @@
               "icon": "lucide-file",
               "title": "Note Summaries"
             }
+          },
+          {
+            "id": "439ada791380727f",
+            "type": "leaf",
+            "state": {
+              "type": "quiz-view",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "Quiz"
+            }
           }
         ],
-        "currentTab": 4
+        "currentTab": 5
       }
     ],
     "direction": "horizontal",
-    "width": 639.5
+    "width": 619.5
   },
   "left-ribbon": {
     "hiddenItems": {
+      "learn:Create Quiz": false,
       "learn:Summarize Notes": false,
       "obsidian-excalidraw-plugin:New drawing": false,
       "switcher:Open quick switcher": false,
@@ -176,12 +191,16 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "b2b59a992c43e779",
+  "active": "2aa831c4b1a1ece5",
   "lastOpenFiles": [
-    "Untitled.md",
+    "Biology Fundamentals.md",
     "intro_to_javascript.md",
-    "Welcome.md",
+    "Programming Concepts.md",
+    "Machine Learning Basics.md",
+    "Ancient History.md",
     "Research Methods.md",
+    "Untitled.md",
+    "Welcome.md",
     "python_flask.md"
   ]
 }
