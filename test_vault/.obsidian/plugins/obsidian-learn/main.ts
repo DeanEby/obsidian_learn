@@ -1,7 +1,8 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, TFile } from 'obsidian';
 import { ExampleView, VIEW_TYPE_EXAMPLE } from './view';
 import { QuizView, VIEW_TYPE_QUIZ, Question } from './quiz';
-
+import { v4 as uuidv4 } from 'uuid';
+import * as path from 'path';
 import axios from 'axios';
 
 interface Message {
@@ -85,9 +86,21 @@ function cleanJsonResponse(response: string): string {
     cleaned = cleaned.substring(0, cleaned.length - 3).trim();
   }
   
-  // Remove any other markdown formatting or text outside the JSON
-  const jsonStartIndex = cleaned.indexOf('[');
-  const jsonEndIndex = cleaned.lastIndexOf(']');
+  // Try to find JSON object or array
+  let jsonStartIndex = -1;
+  let jsonEndIndex = -1;
+  
+  // Check for array
+  if (cleaned.includes('[') && cleaned.includes(']')) {
+    jsonStartIndex = cleaned.indexOf('[');
+    jsonEndIndex = cleaned.lastIndexOf(']');
+  } 
+  // Check for object if array wasn't found or is potentially part of a larger object
+  if (cleaned.includes('{') && cleaned.includes('}') && 
+      (jsonStartIndex === -1 || cleaned.indexOf('{') < jsonStartIndex)) {
+    jsonStartIndex = cleaned.indexOf('{');
+    jsonEndIndex = cleaned.lastIndexOf('}');
+  }
   
   if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
     cleaned = cleaned.substring(jsonStartIndex, jsonEndIndex + 1);
@@ -99,11 +112,29 @@ function cleanJsonResponse(response: string): string {
 interface LearnPluginSettings {
 	summarizeOnOpen: boolean;
 	keyPointsPrefix: string;
+	dbFolderPath: string;
+	alwaysRedistill: boolean;
 }
 
 const DEFAULT_SETTINGS: LearnPluginSettings = {
 	summarizeOnOpen: true,
-	keyPointsPrefix: '- '
+	keyPointsPrefix: '- ',
+	dbFolderPath: 'obsidian-learn-db',
+	alwaysRedistill: false
+}
+
+// Interface for the structure of the JSON data file
+interface NoteData {
+	uuid: string;
+	notePath: string;
+	lastUpdated: number;
+	distilledContent: {
+		facts: string[];
+		definitions: { term: string; definition: string }[];
+		quotes: string[];
+		keyPoints: string[];
+	};
+	quizData: Question[];
 }
 
 export default class LearnPlugin extends Plugin {
@@ -154,6 +185,9 @@ export default class LearnPlugin extends Plugin {
 
 		// Add settings tab
 		this.addSettingTab(new LearnSettingTab(this.app, this));
+		
+		// Ensure the db folder exists
+		this.ensureDbFolderExists();
 	}
 
 	onunload() {
@@ -188,6 +222,228 @@ export default class LearnPlugin extends Plugin {
 		new Notice(`Summarized ${this.summaries.size} notes`);
 	}
 	
+	async ensureDbFolderExists() {
+		const dbFolderPath = this.settings.dbFolderPath;
+		const folderExists = await this.app.vault.adapter.exists(dbFolderPath);
+		
+		if (!folderExists) {
+			try {
+				await this.app.vault.createFolder(dbFolderPath);
+				console.log(`Created database folder at ${dbFolderPath}`);
+			} catch (error) {
+				console.error(`Failed to create database folder: ${error}`);
+				new Notice('Failed to create the database folder. Check console for details.');
+			}
+		}
+	}
+	
+	async checkAndEnsureNoteUuid(file: TFile): Promise<string> {
+		const content = await this.app.vault.read(file);
+		
+		// Check if the note already has a UUID
+		const uuidRegex = /^uuid: ([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/m;
+		const match = content.match(uuidRegex);
+		
+		if (match && match[1]) {
+			// UUID found, return it
+			return match[1];
+		} else {
+			const uuid = uuidv4();
+			
+			// Check if the note has YAML frontmatter
+			const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+			const hasFrontmatter = frontmatterRegex.test(content);
+			
+			let newContent;
+			if (hasFrontmatter) {
+				// Add UUID to existing frontmatter
+				newContent = content.replace(/^---\n/, `---\nuuid: ${uuid}\n`);
+			} else {
+				// Create new frontmatter with UUID
+				newContent = `---\nuuid: ${uuid}\n---\n\n${content}`;
+			}
+			
+			// Write the updated content back to the file
+			await this.app.vault.modify(file, newContent);
+			new Notice(`Added UUID to note: ${file.basename}`);
+			
+			return uuid;
+		}
+	}
+	
+	getJsonFilePath(uuid: string): string {
+		return `${this.settings.dbFolderPath}/${uuid}.json`;
+	}
+	
+	async getOrCreateNoteData(file: TFile, uuid: string): Promise<NoteData> {
+		const jsonPath = this.getJsonFilePath(uuid);
+		const exists = await this.app.vault.adapter.exists(jsonPath);
+		
+		if (exists) {
+			// Read existing data
+			const jsonContent = await this.app.vault.adapter.read(jsonPath);
+			return JSON.parse(jsonContent) as NoteData;
+		} else {
+			// Create new data structure
+			const newNoteData: NoteData = {
+				uuid: uuid,
+				notePath: file.path,
+				lastUpdated: Date.now(),
+				distilledContent: {
+					facts: [],
+					definitions: [],
+					quotes: [],
+					keyPoints: []
+				},
+				quizData: []
+			};
+			
+			// Save the new data
+			await this.saveNoteData(newNoteData);
+			return newNoteData;
+		}
+	}
+	
+	async saveNoteData(noteData: NoteData): Promise<void> {
+		const jsonPath = this.getJsonFilePath(noteData.uuid);
+		await this.app.vault.adapter.write(jsonPath, JSON.stringify(noteData, null, 2));
+	}
+	
+	async distillNoteContent(file: TFile, noteData: NoteData): Promise<NoteData> {
+		// Read file content
+		const content = await this.app.vault.read(file);
+		
+		// Build a prompt for the AI to distill the note content
+		const prompt = `You are an expert educator creating study materials from student notes. 
+						Analyze the following note and extract the following information:
+						
+						1. Facts: Extract factual statements
+						2. Definitions: Extract terms and their definitions
+						3. Quotes: Extract any quoted material
+						4. Key Points: Extract main ideas and important concepts
+						
+						Return the result as a valid JSON object with this structure:
+						
+						{
+							"facts": ["Fact 1", "Fact 2", ...],
+							"definitions": [
+								{ "term": "Term 1", "definition": "Definition 1" },
+								{ "term": "Term 2", "definition": "Definition 2" },
+								...
+							],
+							"quotes": ["Quote 1", "Quote 2", ...],
+							"keyPoints": ["Key point 1", "Key point 2", ...]
+						}
+						
+						NOTE CONTENT:
+						<note>${content}</note>
+						
+						Important: Return ONLY the JSON with no additional text or markdown formatting.`;
+		
+		try {
+			// Call the LM Studio API
+			const result = await callLMStudioAPI(prompt);
+			//console.log(`result: ${result}`)
+			
+			// Clean and parse the JSON result
+			const cleanedResult = cleanJsonResponse(result);
+			const distilledContent = JSON.parse(cleanedResult);
+			
+			// Update noteData with the distilled content
+			noteData.distilledContent = distilledContent;
+			noteData.lastUpdated = Date.now();
+			
+			// Save the updated data
+			await this.saveNoteData(noteData);
+			
+			return noteData;
+		} catch (error) {
+			console.error(`Failed to distill note content for ${file.basename}:`, error);
+			new Notice(`Failed to distill note content - API error`);
+			
+			return noteData; // Return unchanged noteData
+		}
+	}
+	
+	async createQuizFromNoteData(noteData: NoteData): Promise<Question[]> {
+		const { facts, definitions, quotes, keyPoints } = noteData.distilledContent;
+		
+		// Build a prompt for the AI to generate quiz questions from the distilled content
+		const prompt = `You are an expert educator creating quizzes from distilled note content.
+						Generate 3-5 questions based on the following distilled content using ONLY the following question formats:
+						
+						1. Flashcard (question-answer pairs)
+						2. Cloze (fill-in-the-blank)
+						3. Multiple choice (with 4 options)
+						
+						Return ONLY a valid JSON array of question objects using these exact formats:
+						
+						[
+						{
+							"type": "flashcard",
+							"id": 1,
+							"question": "What is the capital of France?",
+							"answer": "Paris"
+						},
+						{
+							"type": "cloze",
+							"id": 2,
+							"text": "The capital of France is <CLOZE>.",
+							"answer": "Paris"
+						},
+						{
+							"type": "multiple_choice",
+							"id": 3,
+							"question": "What is the largest planet in our solar system?",
+							"options": ["Earth", "Saturn", "Jupiter", "Mars"],
+							"correct_index": 2
+						}
+						]
+						
+						IMPORTANT FORMATTING:
+						- For cloze questions, always use <CLOZE> tag to mark the deleted word(s)
+						- Make all questions relevant to the content provided
+						
+						DISTILLED CONTENT:
+						
+						Facts:
+						${facts.join('\n')}
+						
+						Definitions:
+						${definitions.map(d => `${d.term}: ${d.definition}`).join('\n')}
+						
+						Quotes:
+						${quotes.join('\n')}
+						
+						Key Points:
+						${keyPoints.join('\n')}
+						
+						Important: Return ONLY the JSON array with no additional text or markdown formatting.`;
+		
+		try {
+			// Call the LM Studio API
+			const result = await callLMStudioAPI(prompt);
+			
+			// Clean and parse the JSON result
+			const cleanedResult = cleanJsonResponse(result);
+			const quizData = JSON.parse(cleanedResult) as Question[];
+			
+			// Update noteData with the quiz data
+			noteData.quizData = quizData;
+			noteData.lastUpdated = Date.now();
+			
+			// Save the updated data
+			await this.saveNoteData(noteData);
+			
+			return quizData;
+		} catch (error) {
+			console.error(`Failed to generate quiz questions:`, error);
+			new Notice(`Failed to generate quiz questions - API error`);
+			
+			return [];
+		}
+	}
+	
 	async createQuizFromCurrentNote() {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!activeView) {
@@ -202,70 +458,52 @@ export default class LearnPlugin extends Plugin {
 		}
 		
 		this.currentQuizFile = file;
-		new Notice(`Generating quiz for ${file.basename}...`);
+		new Notice(`Processing ${file.basename}...`);
 		
 		try {
-			// Read file content
-			const content = await this.app.vault.read(file);
+			// 1. Check for UUID and add if needed
+			const uuid = await this.checkAndEnsureNoteUuid(file);
 			
-			// Build a prompt for the AI to extract key points and create quiz
-			const prompt = `You are an expert educator creating study materials from student notes. Generate 3-5 questions based on these notes using ONLY the following question formats:
-
-							1. Flashcard (question-answer pairs)
-							2. Cloze (fill-in-the-blank)
-							3. Multiple choice (with 4 options)
-
-							Return ONLY a valid JSON array of question objects using these exact formats:
-
-							[
-							{
-								"type": "flashcard",
-								"id": 1,
-								"question": "What is the capital of France?",
-								"answer": "Paris"
-							},
-							{
-								"type": "cloze",
-								"id": 2,
-								"text": "The capital of France is <CLOZE>.", 
-								"answer": "Paris"
-							},
-							{
-								"type": "multiple_choice",
-								"id": 3,
-								"question": "What is the largest planet in our solar system?",
-								"options": ["Earth", "Saturn", "Jupiter", "Mars"],
-								"correct_index": 2
-							}
-							]
-
-							IMPORTANT FORMATTING:
-							- For cloze questions, always use <CLOZE> tag to mark the deleted word(s), not underscores or blanks
-							- Make all questions relevant to the content provided
-
-							NOTES TO PROCESS:
-							<notes>${content}</notes>
-
-							Important: Return ONLY the JSON array with no additional text, explanations, or markdown formatting. Do not wrap the JSON in code blocks.`;
+			// 2. Get or create associated JSON file
+			let noteData = await this.getOrCreateNoteData(file, uuid);
 			
-			// Call the LM Studio API with the note content
-			const result = await callLMStudioAPI(prompt);
-			console.log(`Raw quiz data for ${file.basename}:`);
+			// 3. Check if content needs to be distilled
+			const hasDistilledContent = 
+				noteData.distilledContent &&
+				(noteData.distilledContent.facts.length > 0 ||
+				 noteData.distilledContent.keyPoints.length > 0 ||
+				 noteData.distilledContent.definitions.length > 0 ||
+				 noteData.distilledContent.quotes.length > 0);
 			
-			// Clean and parse the JSON result
-			try {
-				const cleanedResult = cleanJsonResponse(result);
-				console.log(`Cleaned quiz data for ${file.basename}`);
+			const noteHasChanged = await this.hasNoteChanged(file, noteData);
+			const shouldRedistill = !hasDistilledContent || noteHasChanged || this.settings.alwaysRedistill;
+			
+			if (shouldRedistill) {
+				let reason = "unknown reason";
+				if (!hasDistilledContent) reason = "no existing content";
+				else if (noteHasChanged) reason = "note content has changed";
+				else if (this.settings.alwaysRedistill) reason = "forced by settings";
 				
-				const quizData = JSON.parse(cleanedResult) as Question[];
-				await this.activateQuizView(quizData);
-			} catch (parseError) {
-				console.error("Failed to parse quiz data:", parseError);
-				new Notice("Failed to parse quiz data from API response");
+				new Notice(`Distilling content for ${file.basename} (${reason})...`);
+				noteData = await this.distillNoteContent(file, noteData);
+			} else {
+				new Notice(`Using existing distilled content for ${file.basename}`);
+			}
+			
+			// 4. Generate quiz questions from the distilled content
+			new Notice(`Generating quiz questions for ${file.basename}...`);
+			const questions = await this.createQuizFromNoteData(noteData);
+			
+			// 5. Activate the quiz view with the questions
+			if (questions && questions.length > 0) {
+				await this.activateQuizView(questions);
+				new Notice(`Quiz with ${questions.length} questions created for ${file.basename}`);
+			} else {
+				new Notice('Failed to generate quiz questions');
 			}
 		} catch (error) {
-			console.error(`Failed to generate quiz for ${file.basename}:`, error);
-			new Notice(`Failed to generate quiz - API error`);
+			console.error(`Failed to process ${file.basename}:`, error);
+			new Notice(`Failed to process note - error`);
 		}
 	}
 
@@ -362,6 +600,21 @@ export default class LearnPlugin extends Plugin {
 			const view = leaf.view as QuizView;
 			view.setQuestions(questions);
 			
+			// Set the refresh callback to force re-distillation
+			view.setRefreshCallback(() => {
+				if (this.currentQuizFile) {
+					// Force re-distillation by temporarily enabling alwaysRedistill
+					const originalSetting = this.settings.alwaysRedistill;
+					this.settings.alwaysRedistill = true;
+					
+					// Create the quiz again (which will force re-distillation)
+					this.createQuizFromCurrentNote();
+					
+					// Restore the original setting
+					this.settings.alwaysRedistill = originalSetting;
+				}
+			});
+			
 			const filename = this.currentQuizFile ? this.currentQuizFile.basename : '';
 			new Notice(`Quiz with ${questions.length} questions created for ${filename}`);
 		}
@@ -393,6 +646,15 @@ export default class LearnPlugin extends Plugin {
 			view.updateFiles(markdownFiles);
 			view.updateSummaries(this.summaries);
 		}
+	}
+
+	async hasNoteChanged(file: TFile, noteData: NoteData): Promise<boolean> {
+		// Get the last modified time of the file
+		const fileModified = file.stat.mtime;
+		
+		// If the note data's lastUpdated timestamp is older than the file's
+		// last modified time, the content has likely changed
+		return fileModified > noteData.lastUpdated;
 	}
 }
 
@@ -428,6 +690,29 @@ class LearnSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.keyPointsPrefix)
 				.onChange(async (value) => {
 					this.plugin.settings.keyPointsPrefix = value;
+					await this.plugin.saveSettings();
+				}));
+				
+		new Setting(containerEl)
+			.setName('Database Folder Path')
+			.setDesc('Path to the folder where note data will be stored (relative to vault root)')
+			.addText(text => text
+				.setValue(this.plugin.settings.dbFolderPath)
+				.onChange(async (value) => {
+					this.plugin.settings.dbFolderPath = value;
+					await this.plugin.saveSettings();
+					
+					// Ensure the folder exists after changing the path
+					await this.plugin.ensureDbFolderExists();
+				}));
+				
+		new Setting(containerEl)
+			.setName('Always Re-distill Content')
+			.setDesc('Always re-distill note content even if there are no changes detected')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.alwaysRedistill)
+				.onChange(async (value) => {
+					this.plugin.settings.alwaysRedistill = value;
 					await this.plugin.saveSettings();
 				}));
 	}

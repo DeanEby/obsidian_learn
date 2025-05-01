@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Biology Fundamentals.md",
+                "file": "intro_to_javascript.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Biology Fundamentals"
+              "title": "intro_to_javascript"
             }
           }
         ]
@@ -176,7 +176,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 332.5
+    "width": 307.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -193,14 +193,20 @@
   },
   "active": "2aa831c4b1a1ece5",
   "lastOpenFiles": [
-    "intro_to_javascript.md",
-    "Programming Concepts.md",
-    "Biology Fundamentals.md",
+    "obsidian-learn-db/3c919967-8047-4114-bffb-c7d7541b2a75.json",
     "Machine Learning Basics.md",
     "Ancient History.md",
+    "obsidian-learn-db/52bcd74c-7d68-48e0-a58e-1c2a0a92a7a2.json",
     "Research Methods.md",
+    "obsidian-learn-db/2ad0515d-cdce-4189-83b9-6eb3b99b5dc9.json",
+    "python_flask.md",
+    "obsidian-learn-db/2a15aeda-4926-4256-bcdf-bb3f36dfde1f.json",
+    "Programming Concepts.md",
+    "obsidian-learn-db/64223518-0a55-484d-a133-0680cc74caa2.json",
+    "Biology Fundamentals.md",
+    "obsidian-learn-db/cc0130f5-e2fd-48b9-ad0a-be296768547a.json",
+    "intro_to_javascript.md",
     "Untitled.md",
-    "Welcome.md",
-    "python_flask.md"
+    "Welcome.md"
   ]
 }

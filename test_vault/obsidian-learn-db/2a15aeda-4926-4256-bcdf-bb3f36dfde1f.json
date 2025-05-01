@@ -1,0 +1,66 @@
+{
+  "uuid": "2a15aeda-4926-4256-bcdf-bb3f36dfde1f",
+  "notePath": "python_flask.md",
+  "lastUpdated": 1746068816502,
+  "distilledContent": {
+    "facts": [
+      "Flask is a web application framework written in Python.",
+      "The `pip install flask` command installs Flask.",
+      "The `pip install requests` command installs the Requests library.",
+      "Vite will typically start the development server on port 5173.",
+      "The Vite development server proxies API requests to Flask on port 5000."
+    ],
+    "definitions": [
+      {
+        "term": "Flask",
+        "definition": "A web application framework written in Python"
+      },
+      {
+        "term": "Vite",
+        "definition": "A build tool that enables fast development for modern web applications."
+      }
+    ],
+    "quotes": [
+      "`pip install flask`",
+      "`pip install requests`"
+    ],
+    "keyPoints": [
+      "Flask is used to create web applications.",
+      "The provided code demonstrates a basic Flask application that responds to the root URL.",
+      "A React component uses Axios to fetch data from a Flask backend API.",
+      "During development, both the Flask backend and Vite development server are run concurrently.",
+      "Vite proxies requests to Flask on port 5000."
+    ]
+  },
+  "quizData": [
+    {
+      "type": "flashcard",
+      "id": 1,
+      "question": "What is Flask primarily used for?",
+      "answer": "Creating web applications."
+    },
+    {
+      "type": "cloze",
+      "id": 2,
+      "text": "Vite typically starts the development server on port ______."
+    },
+    {
+      "type": "multiple_choice",
+      "id": 3,
+      "question": "What command is used to install Flask?",
+      "options": [
+        "pip install flask",
+        "flask install pip",
+        "python install flask",
+        "import flask"
+      ],
+      "correct_index": 0
+    },
+    {
+      "type": "flashcard",
+      "id": 4,
+      "question": "What library is installed with `pip install requests`?",
+      "answer": "Requests"
+    }
+  ]
+}

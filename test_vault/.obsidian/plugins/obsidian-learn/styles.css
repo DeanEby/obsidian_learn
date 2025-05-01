@@ -326,3 +326,30 @@ If your plugin does not need CSS, delete this file.
   margin: 10px 0;
   text-align: center;
 }
+
+/* Refresh button styling */
+.refresh-quiz-button {
+  background-color: var(--background-modifier-border);
+  color: var(--text-normal);
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 10px auto;
+  display: block;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease;
+}
+
+.refresh-quiz-button:hover {
+  background-color: var(--background-modifier-border-hover);
+  color: var(--text-accent);
+}
+
+.quiz-header .refresh-quiz-button {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  display: inline-block;
+  margin: 0;
+}

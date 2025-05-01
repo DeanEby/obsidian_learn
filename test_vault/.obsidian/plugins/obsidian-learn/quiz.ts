@@ -44,6 +44,7 @@ export class QuizView extends ItemView {
   private userAnswers: Map<number, any> = new Map();
   private userRatings: Map<number, Rating> = new Map();
   private showingAnswer: boolean = false;
+  private refreshCallback: (() => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -71,6 +72,11 @@ export class QuizView extends ItemView {
     this.onOpen();
   }
 
+  // Add a method to set a callback for refreshing distilled content
+  setRefreshCallback(callback: () => void) {
+    this.refreshCallback = callback;
+  }
+
   async onOpen() {
     const container = this.containerEl.children[1];
     container.empty();
@@ -78,12 +84,35 @@ export class QuizView extends ItemView {
 
     if (this.questions.length === 0) {
       container.createEl("p", { text: "No quiz questions available." });
+      
+      // Add refresh button even if no questions
+      if (this.refreshCallback) {
+        const refreshBtn = container.createEl("button", { 
+          text: "Refresh Content & Generate New Quiz", 
+          cls: "refresh-quiz-button" 
+        });
+        refreshBtn.addEventListener("click", () => {
+          this.refreshCallback?.();
+        });
+      }
+      
       return;
     }
 
     // Create quiz header with progress
     const headerEl = container.createEl("div", { cls: "quiz-header" });
     headerEl.createEl("h2", { text: "Quiz" });
+    
+    // Add refresh button in header
+    if (this.refreshCallback) {
+      const refreshBtn = headerEl.createEl("button", { 
+        text: "Refresh Content", 
+        cls: "refresh-quiz-button" 
+      });
+      refreshBtn.addEventListener("click", () => {
+        this.refreshCallback?.();
+      });
+    }
     
     const progressEl = headerEl.createEl("div", { cls: "quiz-progress" });
     progressEl.createEl("span", { 
